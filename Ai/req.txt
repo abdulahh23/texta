@@ -1,0 +1,1 @@
+fastapi uvicorn pydantic langchain langchain-core langchain-groq langsmith dotenv pydantic_settings
