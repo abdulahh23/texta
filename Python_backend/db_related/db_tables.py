@@ -1,0 +1,53 @@
+from datetime import datetime, timezone
+from db import Base
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Boolean, func, Enum 
+from sqlalchemy.sql.sqltypes import TIMESTAMP
+from sqlalchemy.sql.expression import text
+from sqlalchemy.orm import relationship
+
+class PostTable(Base): 
+    __tablename__ = "posts"
+
+    post_id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    title = Column(String, nullable=False)
+    content = Column(String, nullable=False)
+    published = Column(Boolean, nullable=False, server_default="true")
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")) 
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE", onupdate="SET DEFAULT"), nullable=False)
+    
+    owner = relationship("UserTable", back_populates="posts")
+                                                                
+    likers = relationship("UserTable", secondary="likes", back_populates="liked_posts")
+    comments = relationship("CommentTable", back_populates="post", cascade="all, delete-orphan")
+
+
+class UserTable(Base):
+    __tablename__ = "users"
+    
+    user_id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    email = Column(String, nullable=False, unique=True)
+    password = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")) 
+    
+    
+    posts = relationship("PostTable", back_populates="owner")
+    liked_posts = relationship("PostTable", secondary="likes", back_populates="likers")
+    comments = relationship("CommentTable", back_populates="commenter", cascade="all, delete-orphan")
+
+
+class CommentTable(Base):
+    __tablename__ = "comments"
+
+    comment_id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    text = Column(String, nullable=False)
+    
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    post_id = Column(Integer, ForeignKey("posts.post_id", ondelete="CASCADE"), nullable=False)
+
+    post = relationship("PostTable", back_populates="comments")
+    commenter = relationship("UserTable", back_populates="comments")
+
+
+
