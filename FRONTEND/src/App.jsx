@@ -21,22 +21,24 @@ function App() {
   return (
     <>
       <Nav/>
-
+      
       <div className='px-44'>
-      <p className='font-bold basic_black text-4xl mt-10'>Your feed</p>
-      <p className='text-[#636E7D]'>Thoughts, ideas, and stories from the community.</p>
+          <p className='font-bold basic_black text-4xl mt-10'>Your feed</p>
+        <div className='flex justify-between items-center'>
+          <p className='text-[#636E7D]'>Thoughts, ideas, and stories from the community.</p>
+          <button className='cursor-pointer mr-1.5' onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseExit}>
+            <Player 
+              ref={playerRef} 
+              icon={ postIcon }
+              size={45}
+            />
+          </button>
+        </div>
 
-      <div className='flex flex-col gap-1.5'>
-        <PostCard/>
-        <PostCard/>
-      </div>
-
-      <button onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseExit}>
-        <Player 
-            ref={playerRef} 
-            icon={ postIcon }
-        />
-      </button>
+        <div className='flex flex-col gap-1.5'>
+          <PostCard/>
+          <PostCard/>
+        </div>
       
       </div>
     </>
