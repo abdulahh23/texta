@@ -1,48 +1,78 @@
-import { useState,useEffect, useRef } from 'react'
-import './App.css'
-import Nav from './components/Nav'
-import PostCard from './components/PostCard'
-import { Player } from '@lordicon/react';
-import postIcon from './assets/postIcon.json'
+import { useEffect, useState } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import './App.css';
+import Nav from './components/Nav';
+import Home from './pages/Home';
+import CreatePost from './pages/CreatePost';
+import GrammarReview from './pages/GrammarReview';
+import Profile from './pages/Profile';
+import { createPost, fallbackPosts, fetchPosts } from './services/postService';
 
+const STORAGE_KEY = 'texta-posts';
+
+const getInitialPosts = () => {
+  if (typeof window === 'undefined') {
+    return fallbackPosts;
+  }
+
+  try {
+    const savedPosts = localStorage.getItem(STORAGE_KEY);
+    if (savedPosts) {
+      const parsed = JSON.parse(savedPosts);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error('Unable to load posts from storage', error);
+  }
+
+  return fallbackPosts;
+};
 
 function App() {
-  const [count, setCount] = useState(0)
-  const playerRef = useRef(null)
+  const [posts, setPosts] = useState(getInitialPosts);
 
-  const handleMouseEnter = () => {
-        playerRef.current?.playFromBeginning();
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
     }
+  }, [posts]);
 
-    const handleMouseExit = () => {
-        playerRef.current?.stop();
-    }
+  useEffect(() => {
+    let isCurrent = true;
+
+    fetchPosts().then((nextPosts) => {
+      if (isCurrent && nextPosts?.length) {
+        setPosts(nextPosts);
+      }
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  const handlePublish = async (draft) => {
+    const nextPost = await createPost(draft);
+    setPosts((previousPosts) => [nextPost, ...previousPosts]);
+  };
 
   return (
-    <>
-      <Nav/>
-      
-      <div className='px-44'>
-          <p className='font-bold basic_black text-4xl mt-10'>Your feed</p>
-        <div className='flex justify-between items-center'>
-          <p className='text-[#636E7D]'>Thoughts, ideas, and stories from the community.</p>
-          <button className='cursor-pointer mr-1.5' onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseExit}>
-            <Player 
-              ref={playerRef} 
-              icon={ postIcon }
-              size={45}
-            />
-          </button>
-        </div>
+    <div className="app-shell min-h-screen">
+      <Nav />
 
-        <div className='flex flex-col gap-1.5'>
-          <PostCard/>
-          <PostCard/>
-        </div>
-      
-      </div>
-    </>
-  )
+      <main className="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
+        <Routes>
+          <Route path="/" element={<Home posts={posts} />} />
+          <Route path="/create" element={<CreatePost onPublish={handlePublish} />} />
+          <Route path="/grammar-review" element={<GrammarReview onPublish={handlePublish} />} />
+          <Route path="/profile" element={<Profile posts={posts} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
